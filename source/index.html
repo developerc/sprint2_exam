@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Распределенный калькулятор</title>
+  <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+</head>
+<body>
+ <h1>Тестирование приложения "Распределенный калькулятор"</h1>
+<p>Для тестирования решения задачи валидны символы плюс +, минус -, умножить *, разделить /, круглые скобки (), точка .</p>
+<p>Например 2 + 3 * (5 - 4)/20</p>
+<p>Введите текст задачи и нажмите кнопку "Отослать для решения"</p>
+<label> Текст задачи:  </label>
+<input type="text" id="lab1">
+<input   id="button1" type="button" name="Button1" value="Отослать для решения"><br><br>
+<p>Результат ответа оркестратора:</p>
+<label> ID задачи:  </label>
+<input type="text" id="lab2" size="5">
+<label> ID агента:  </label>
+<input type="text" id="lab3" size="5">
+ <label> Текст задачи:  </label>
+<input type="text" id="lab4">
+<label> Результат:  </label>
+<input type="text" id="lab5" size="10">
+<label> Статус решения:  </label>
+<input type="text" id="lab6">
+<label> Время начала:  </label>
+<input type="text" id="lab7">
+<label> Время окончания:  </label>
+<input type="text" id="lab8"><br><br>
+<p>Если статус = start то задача находится в очереди задач</p>
+<p>Если статус = in_progress то задача обрабатывается агентом</p>
+<p>Если статус = finish то задача решена правильно</p>
+<p>Если статус = error то имеется ошибка в тексте задачи</p>
+<p>Для проверки статуса решения задачи нажмите кнопку "Проверить статус решения"</p>
+<input   id="button2" type="button" name="Button2" value="Проверить статус решения"><br><br>
+<p>Для получения списка задач нажмите кнопку "Получение списка задач"</p>
+<input   id="button3" type="button" name="Button3" value="Получение списка задач">
+<p><textarea name="comment" id="textarea1" cols="220" rows="10"></textarea></p>
+<p>Для получения списка незавершенных задач нажмите кнопку "Получение списка незавершенных задач"</p>
+<input   id="button4" type="button" name="Button4" value="Получение списка незавершенных задач">
+<p><textarea name="comment" id="textarea2" cols="220" rows="10"></textarea></p>
+<p>Для получения списка задействованных агентов с выполняемыми задачами нажмите кнопку "Получение списка задействованных агентов"</p>
+<input   id="button5" type="button" name="Button5" value="Получение списка задействованных агентов">
+<p><textarea name="comment" id="textarea3" cols="220" rows="10"></textarea></p>
+<script>
+
+$("#button1").on("click", function(){
+var expr = "http://localhost:8080/send_expr/?expr=" + $("#lab1").val()
+var url = expr.replaceAll("+", "%2B");
+console.log(url)
+$.ajax({
+            type: 'POST',
+            url: url,
+            dataType: 'json',
+            async: false,
+            success: function (result) {
+                var stringData = JSON.stringify(result);
+                console.log(stringData);
+                var data = JSON.parse(stringData);
+				console.log(data);
+				$("#lab2").val(data.id);
+				$("#lab3").val(data.agentid);
+				$("#lab4").val(data.expr);
+				$("#lab5").val(data.result);
+				$("#lab6").val(data.status);
+				$("#lab7").val(data.begindate);
+				$("#lab8").val(data.enddate);
+            },
+			statusCode: {				
+				400: function() {				  
+					alert("Выражение содержит невалидный символ!");					
+				}
+			},
+            error: function (jqXHR, testStatus, errorThrown) {
+                console.log('error application')
+            }
+        });
+});		
+
+$("#button2").on("click", function(){
+var expr = "http://localhost:8080/get_id_result/?id=" + $("#lab2").val()
+$.ajax({
+            type: 'GET',
+            url: expr,
+            dataType: 'json',
+            async: false,
+            success: function (result) {
+                var stringData = JSON.stringify(result);
+                console.log(stringData);
+                var data = JSON.parse(stringData);
+				console.log(data);
+				$("#lab2").val(data.id);
+				$("#lab3").val(data.agentid);
+				$("#lab4").val(data.expr);
+				$("#lab5").val(data.result);
+				$("#lab6").val(data.status);
+				$("#lab7").val(data.begindate);
+				$("#lab8").val(data.enddate);
+            },
+			statusCode: {				
+				500: function() {				  
+					alert("Не найдена задача с таким номером!");					
+				}
+			},
+            error: function (jqXHR, testStatus, errorThrown) {
+                console.log('error application')
+            }
+        });
+});		
+
+$("#button3").on("click", function(){
+var expr = "http://localhost:8080/get_task_list/"
+$.ajax({
+            type: 'GET',
+            url: expr,
+            dataType: 'json',
+            async: false,
+            success: function (result) {				
+                var stringData = JSON.stringify(result);
+                console.log(stringData);
+                var json = $.parseJSON(stringData);
+				console.log(json);
+				taVal = ""
+				$(json).each(function (i, val) {
+					$.each(val, function (k, v) {
+					console.log(k + " : " + v);
+					//var task = $.parseJSON(v);
+					//$("#textarea").val(v.result);
+					taVal = taVal + "ID задачи: " + v.id + " ID агента: " + v.agentid + " Задача: " + v.expr + " Результат: " + v.result+  " Статус: " + v.status +  " Дата начала: " + v.begindate +  " Дата окончания: " + v.enddate +"\n"
+				  });
+				});
+				$("#textarea1").val(taVal);
+				/*for (var task in data){
+					tObj = JSON.parse(task);
+					console.log(tObj);
+				}*/
+				/*$("#lab2").val(data.id);
+				$("#lab3").val(data.agentid);
+				$("#lab4").val(data.expr);
+				$("#lab5").val(data.result);
+				$("#lab6").val(data.status);
+				$("#lab7").val(data.begindate);
+				$("#lab8").val(data.enddate);*/
+            },
+			statusCode: {				
+				400: function() {				  
+					alert("Это не GET запрос!");					
+				}
+			},
+            error: function (jqXHR, testStatus, errorThrown) {
+                console.log('error application')
+            }
+        });
+});		
+
+$("#button4").on("click", function(){
+var expr = "http://localhost:8080/get_list_task_time/"
+$.ajax({
+            type: 'GET',
+            url: expr,
+            dataType: 'json',
+            async: false,
+            success: function (result) {				
+                var stringData = JSON.stringify(result);
+                console.log(stringData);
+                var json = $.parseJSON(stringData);
+				console.log(json);
+				taVal = ""
+				$(json).each(function (i, val) {
+					//$.each(val, function (k, v) {
+					console.log( val);
+					taVal = taVal + "ID задачи: " + val.idtask + " Длительность выполнения сек: " + val.duration +"\n"
+					//taVal = taVal + "ID задачи: " + v.id + " ID агента: " + v.agentid + " Задача: " + v.expr + " Результат: " + v.result+  " Статус: " + v.status +  " Дата начала: " + v.begindate +  " Дата окончания: " + v.enddate +"\n"
+				  //});
+				});
+				$("#textarea2").val(taVal);
+				
+            },
+			statusCode: {				
+				400: function() {				  
+					alert("Это не GET запрос!");					
+				}
+			},
+            error: function (jqXHR, testStatus, errorThrown) {
+                console.log('error application')
+            }
+        });
+});		
+
+$("#button5").on("click", function(){
+var expr = "http://localhost:8080/get_agent_list/"
+$.ajax({
+            type: 'GET',
+            url: expr,
+            dataType: 'json',
+            async: false,
+            success: function (result) {				
+                var stringData = JSON.stringify(result);
+                console.log(stringData);
+                var json = $.parseJSON(stringData);
+				console.log(json);
+				taVal = ""
+				$(json).each(function (i, val) {					
+					console.log( val);
+					taVal = taVal + "ID агента: " + val.agentid + " ID задачи: " + val.taskid +"\n"					
+				});
+				$("#textarea3").val(taVal);				
+            },
+			statusCode: {				
+				400: function() {				  
+					alert("Это не GET запрос!");					
+				}
+			},
+            error: function (jqXHR, testStatus, errorThrown) {
+                console.log('error application')
+            }
+        });
+});		
+
+</script>
+ 
+</body>
+</html>
